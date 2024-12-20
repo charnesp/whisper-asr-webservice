@@ -48,21 +48,16 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get -qq update \
     && apt-get -qq install --no-install-recommends \
     libsndfile1 \
-    && rm -rf /var/lib/apt/lists/*
-
-ENV POETRY_VENV=/app/.venv
-
-RUN export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -qq update \
-    && apt-get -qq install --no-install-recommends \
     python${PYTHON_VERSION} \
     python${PYTHON_VERSION}-venv \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
-
+    
 RUN ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python3 && \
     ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python && \
     ln -s -f /usr/bin/pip3 /usr/bin/pip
+
+ENV POETRY_VENV=/app/.venv
 
 RUN python3 -m venv $POETRY_VENV \
     && $POETRY_VENV/bin/pip install -U pip setuptools \
@@ -72,24 +67,21 @@ ENV PATH="${PATH}:${POETRY_VENV}/bin"
 
 WORKDIR /app
 
-COPY poetry.lock pyproject.toml ./
-
-RUN poetry config virtualenvs.in-project true
-RUN poetry install --no-root
-
-COPY . .
+COPY . /app
 COPY --from=ffmpeg /FFmpeg-6.1.1 /FFmpeg-6.1.1
 COPY --from=ffmpeg /root/bin/ffmpeg /usr/local/bin/ffmpeg
 COPY --from=swagger-ui /usr/share/nginx/html/swagger-ui.css swagger-ui-assets/swagger-ui.css
 COPY --from=swagger-ui /usr/share/nginx/html/swagger-ui-bundle.js swagger-ui-assets/swagger-ui-bundle.js
 
+RUN poetry config virtualenvs.in-project true
 RUN poetry install
+
 RUN $POETRY_VENV/bin/pip install torch==1.13.1+cu117 -f https://download.pytorch.org/whl/torch
 
-RUN $POETRY_VENV/bin/pip install pandas transformers nltk pyannote.audio
-RUN git clone --depth 1 https://github.com/m-bain/whisperX.git \
-    && cd whisperX \
-    && $POETRY_VENV/bin/pip install -e .
+# WORKAROUND due to Poetry limitation with git-based dependencies
+# https://github.com/python-poetry/poetry/issues/8774
+RUN $POETRY_VENV/bin/pip install git+https://github.com/charnesp/whisperX.git
+
 
 EXPOSE 9000
 
