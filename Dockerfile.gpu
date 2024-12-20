@@ -50,6 +50,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     libsndfile1 \
     python${PYTHON_VERSION} \
     python${PYTHON_VERSION}-venv \
+    git \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
     
