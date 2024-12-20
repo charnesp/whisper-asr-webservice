@@ -7,17 +7,26 @@ services:
     # docker-compose.yml file (the first in the devcontainer.json "dockerComposeFile"
     # array). The sample below assumes your primary file is in the root of your project.
     #
-    # build:
-    #   context: .
-    #   dockerfile: .devcontainer/Dockerfile
-    env_file: .devcontainer/dev.env
+    build:
+      context: ../
+      dockerfile: ./Dockerfile
+
+    ports:
+      - "9000:9000"
+      
+    volumes:
+      - ../app:/app/app
+      #- cache-pip:/root/.cache/pip
+      #- cache-poetry:/root/.cache/poetry
+      #- cache-whisper:/root/.cache/whisper
+      - ../..:/workspaces:cached
+
+    #env_file: 
+    #  - ./dev.env
     environment:
       ASR_ENGINE: ${ASR_ENGINE}
       HF_TOKEN: ${HF_TOKEN}
-
-    volumes:
-      # Update this to wherever you want VS Code to mount the folder of your project
-      - ..:/workspaces:cached
+      ASR_MODEL: ${ASR_MODEL}
 
     # Uncomment the next four lines if you will use a ptrace-based debugger like C++, Go, and Rust.
     # cap_add:

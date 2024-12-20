@@ -44,3 +44,5 @@ poetry/core/*
 public
 
 .devcontainer/dev.env
+poetry.lock
+.devcontainer/.env

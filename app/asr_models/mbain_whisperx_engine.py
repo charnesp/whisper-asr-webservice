@@ -8,18 +8,15 @@ from app.asr_models.asr_model import ASRModel
 from app.config import CONFIG
 from app.utils import WriteTXT, WriteSRT, WriteVTT, WriteTSV, WriteJSON
 
-
 class WhisperXASR(ASRModel):
-    def __init__(self):
-        self.x_models = dict()
 
     def load_model(self):
-
         asr_options = {"without_timestamps": False}
         self.model = whisperx.load_model(
             CONFIG.MODEL_NAME, device=CONFIG.DEVICE, compute_type="float32", asr_options=asr_options
         )
 
+    def load_diarize_model(self):
         if CONFIG.HF_TOKEN != "":
             self.diarize_model = whisperx.DiarizationPipeline(use_auth_token=CONFIG.HF_TOKEN, device=CONFIG.DEVICE)
 
@@ -34,6 +31,8 @@ class WhisperXASR(ASRModel):
         options: Union[dict, None],
         output,
     ):
+        if self.diarize_model is None:
+            self.load_diarize_model()
         options_dict = {"task": task}
         if language:
             options_dict["language"] = language
@@ -64,7 +63,6 @@ class WhisperXASR(ASRModel):
                 print("Warning! HF_TOKEN is not set. Diarization may not work as expected.")
             min_speakers = options.get("min_speakers", None)
             max_speakers = options.get("max_speakers", None)
-            # add min/max number of speakers if known
             diarize_segments = self.diarize_model(audio, min_speakers, max_speakers)
             result = whisperx.assign_word_speakers(diarize_segments, result)
 

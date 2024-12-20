@@ -69,10 +69,9 @@ COPY --from=swagger-ui /usr/share/nginx/html/swagger-ui-bundle.js swagger-ui-ass
 RUN poetry config virtualenvs.in-project true
 RUN poetry install
 
-RUN $POETRY_VENV/bin/pip install pandas transformers nltk pyannote.audio
-RUN git clone --depth 1 https://github.com/m-bain/whisperX.git \
-    && cd whisperX \
-    && $POETRY_VENV/bin/pip install -e .
+# WORKAROUND due to Poetry limitation with git-based dependencies
+# https://github.com/python-poetry/poetry/issues/8774
+RUN $POETRY_VENV/bin/pip install git+https://github.com/charnesp/whisperX.git
 
 EXPOSE 9000
 
