@@ -124,7 +124,7 @@ class WriteJSON(ResultWriter):
         json.dump(result, file)
 
 
-def load_audio(file: BinaryIO, encode=True, sr: int = CONFIG.SAMPLE_RATE):
+def load_audio(file: BinaryIO, content_type: str, encode=True, sr: int = CONFIG.SAMPLE_RATE):
     """
     Open an audio file object and read as mono waveform, resampling as necessary.
     Modified from https://github.com/openai/whisper/blob/main/whisper/audio.py to accept a file object
@@ -132,6 +132,8 @@ def load_audio(file: BinaryIO, encode=True, sr: int = CONFIG.SAMPLE_RATE):
     ----------
     file: BinaryIO
         The audio file like object
+    content_type: str
+        The content type of the audio file (e.g., 'audio/wav', 'audio/mpeg', 'audio/ogg').
     encode: Boolean
         If true, encode audio stream to WAV before sending to whisper
     sr: int

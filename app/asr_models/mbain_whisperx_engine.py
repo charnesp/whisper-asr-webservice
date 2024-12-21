@@ -72,6 +72,10 @@ class WhisperXASR(ASRModel):
                 diarize_segments, embeddings = self.diarize_model(
                     audio, min_speakers, max_speakers, return_embeddings=True
                 )
+
+                embeddings["embeddings"] = embeddings["embeddings"].apply(lambda x: x.tolist())
+                result["embeddings"] = embeddings.to_dict('records')
+                
                 result = whisperx.assign_word_speakers(diarize_segments, result)
 
         output_file = StringIO()

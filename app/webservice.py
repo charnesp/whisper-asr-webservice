@@ -10,6 +10,8 @@ from fastapi import FastAPI, File, Query, UploadFile, applications
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi import HTTPException
+
 from whisper import tokenizer
 
 from app.config import CONFIG
@@ -52,6 +54,7 @@ async def index():
     return "/docs"
 
 
+
 @app.post("/asr", tags=["Endpoints"])
 async def asr(
     audio_file: UploadFile = File(...),  # noqa: B008
@@ -88,8 +91,11 @@ async def asr(
     ),
     output: Union[str, None] = Query(default="txt", enum=["txt", "vtt", "srt", "tsv", "json"]),
 ):
+    if not audio_file.content_type.startswith(("audio/", "video/")):
+        raise HTTPException(status_code=400, detail="File must be of audio or video type.")
+
     result = asr_model.transcribe(
-        load_audio(audio_file.file, encode),
+        load_audio(audio_file.file, audio_file.content_type, encode),
         task,
         language,
         initial_prompt,
