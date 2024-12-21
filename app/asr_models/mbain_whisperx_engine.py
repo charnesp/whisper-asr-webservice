@@ -13,7 +13,7 @@ class WhisperXASR(ASRModel):
     def load_model(self):
         asr_options = {"without_timestamps": False}
         self.model = whisperx.load_model(
-            CONFIG.MODEL_NAME, device=CONFIG.DEVICE, compute_type="float32", asr_options=asr_options
+            CONFIG.MODEL_NAME, device=CONFIG.DEVICE, compute_type=CONFIG.MODEL_QUANTIZATION, asr_options=asr_options
         )
 
     def load_diarize_model(self):
