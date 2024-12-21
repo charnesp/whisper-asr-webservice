@@ -8,6 +8,7 @@ from app.asr_models.asr_model import ASRModel
 from app.config import CONFIG
 from app.utils import WriteTXT, WriteSRT, WriteVTT, WriteTSV, WriteJSON
 
+
 class WhisperXASR(ASRModel):
 
     def load_model(self):
@@ -31,8 +32,10 @@ class WhisperXASR(ASRModel):
         options: Union[dict, None],
         output,
     ):
-        if self.diarize_model is None:
-            self.load_diarize_model()
+        with self.model_lock:
+            if self.diarize_model is None:
+                self.load_diarize_model()
+
         options_dict = {"task": task}
         if language:
             options_dict["language"] = language
@@ -48,23 +51,28 @@ class WhisperXASR(ASRModel):
         if result["language"] in self.x_models:
             model_x, metadata = self.x_models[result["language"]]
         else:
-            self.x_models[result["language"]] = whisperx.load_align_model(
-                language_code=result["language"], device=CONFIG.DEVICE
-            )
-            model_x, metadata = self.x_models[result["language"]]
+            with self.model_lock:
+                self.x_models[result["language"]] = whisperx.load_align_model(
+                    language_code=result["language"], device=CONFIG.DEVICE
+                )
+                model_x, metadata = self.x_models[result["language"]]
 
         # Align whisper output
-        result = whisperx.align(
-            result["segments"], model_x, metadata, audio, CONFIG.DEVICE, return_char_alignments=False
-        )
+        with self.model_lock:
+            result = whisperx.align(
+                result["segments"], model_x, metadata, audio, CONFIG.DEVICE, return_char_alignments=False
+            )
 
-        if options.get("diarize", False):
-            if CONFIG.HF_TOKEN == "":
-                print("Warning! HF_TOKEN is not set. Diarization may not work as expected.")
-            min_speakers = options.get("min_speakers", None)
-            max_speakers = options.get("max_speakers", None)
-            diarize_segments = self.diarize_model(audio, min_speakers, max_speakers)
-            result = whisperx.assign_word_speakers(diarize_segments, result)
+        with self.model_lock:
+            if options.get("diarize", False):
+                if CONFIG.HF_TOKEN == "":
+                    print("Warning! HF_TOKEN is not set. Diarization may not work as expected.")
+                min_speakers = options.get("min_speakers", None)
+                max_speakers = options.get("max_speakers", None)
+                diarize_segments, embeddings = self.diarize_model(
+                    audio, min_speakers, max_speakers, return_embeddings=True
+                )
+                result = whisperx.assign_word_speakers(diarize_segments, result)
 
         output_file = StringIO()
         self.write_result(result, output_file, output)
