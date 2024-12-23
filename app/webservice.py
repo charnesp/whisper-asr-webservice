@@ -57,7 +57,7 @@ async def index():
 @app.post("/asr", tags=["Endpoints"])
 async def asr(
     audio_file: UploadFile = File(...),  # noqa: B008
-    encode: bool = Query(default=True, description="Encode audio first through ffmpeg"),
+    encode: bool = Query(default=True, description="Encode audio first through pydub/ffmpeg"),
     task: Union[str, None] = Query(default="transcribe", enum=["transcribe", "translate"]),
     language: Union[str, None] = Query(default=None, enum=LANGUAGE_CODES),
     initial_prompt: Union[str, None] = Query(default=None),
