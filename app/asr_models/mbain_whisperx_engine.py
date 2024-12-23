@@ -12,7 +12,7 @@ from app.utils import WriteTXT, WriteSRT, WriteVTT, WriteTSV, WriteJSON
 class WhisperXASR(ASRModel):
 
     def load_model(self):
-        asr_options = {"without_timestamps": False}
+        asr_options = {"without_timestamps": False, "multilingual": True, "word_timestamps": False}
         self.model = whisperx.load_model(
             CONFIG.MODEL_NAME, device=CONFIG.DEVICE, compute_type=CONFIG.MODEL_QUANTIZATION, asr_options=asr_options
         )
@@ -41,7 +41,8 @@ class WhisperXASR(ASRModel):
             options_dict["language"] = language
         if initial_prompt:
             options_dict["initial_prompt"] = initial_prompt
-        options_dict["multilingual"] = options.get("multilingual", False)
+        if word_timestamps:
+            options_dict["word_timestamps"] = word_timestamps
 
         with self.model_lock:
             if self.model is None:
@@ -81,6 +82,12 @@ class WhisperXASR(ASRModel):
                 result = whisperx.assign_word_speakers(diarize_segments, result)
 
         output_file = StringIO()
+
+        # If word_timestamps is 0, then we don't write the timestamps:
+        if not options_dict.get("word_timestamps", False):
+            for segment in result["segments"]:
+                segment.pop("words", None)
+            result.pop("word_segments", None)
         self.write_result(result, output_file, output)
         output_file.seek(0)
 

@@ -71,7 +71,7 @@ async def asr(
     word_timestamps: bool = Query(
         default=False,
         description="Word level timestamps",
-        include_in_schema=(True if CONFIG.ASR_ENGINE == "faster_whisper" else False),
+        include_in_schema=(True if CONFIG.ASR_ENGINE in ["faster_whisper", "whisperx"] else False),
     ),
     diarize: bool = Query(
         default=False,
@@ -88,11 +88,6 @@ async def asr(
         description="Max speakers in this file",
         include_in_schema=(True if CONFIG.ASR_ENGINE == "whisperx" else False),
     ),
-    multilingual: bool = Query(
-        default=False,
-        description="Multiple languages in audio file",
-        include_in_schema=(True if CONFIG.ASR_ENGINE in ["faster_whisper", "whisperx"]  else False),
-    ),
     output: Union[str, None] = Query(default="txt", enum=["txt", "vtt", "srt", "tsv", "json"]),
 ):
     if not audio_file.content_type.startswith(("audio/", "video/")):
@@ -105,7 +100,7 @@ async def asr(
         initial_prompt,
         vad_filter,
         word_timestamps,
-        {"diarize": diarize, "min_speakers": min_speakers, "max_speakers": max_speakers, "multilingual": multilingual},
+        {"diarize": diarize, "min_speakers": min_speakers, "max_speakers": max_speakers},
         output,
     )
     return StreamingResponse(
