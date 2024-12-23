@@ -63,7 +63,7 @@ class WriteTXT(ResultWriter):
 
     def write_result(self, result: dict, file: TextIO, options: Union[dict, None]):
         for segment in result["segments"]:
-            print(segment.text.strip(), file=file, flush=True)
+            print(segment['text'].strip(), file=file, flush=True)
 
 
 class WriteVTT(ResultWriter):
