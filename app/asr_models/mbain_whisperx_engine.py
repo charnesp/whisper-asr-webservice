@@ -41,6 +41,8 @@ class WhisperXASR(ASRModel):
             options_dict["language"] = language
         if initial_prompt:
             options_dict["initial_prompt"] = initial_prompt
+        options_dict["multilingual"] = options.get("multilingual", False)
+
         with self.model_lock:
             if self.model is None:
                 self.load_model()

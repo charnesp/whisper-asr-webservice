@@ -54,7 +54,6 @@ async def index():
     return "/docs"
 
 
-
 @app.post("/asr", tags=["Endpoints"])
 async def asr(
     audio_file: UploadFile = File(...),  # noqa: B008
@@ -66,7 +65,7 @@ async def asr(
         bool | None,
         Query(
             description="Enable the voice activity detection (VAD) to filter out parts of the audio without speech",
-            include_in_schema=(True if CONFIG.ASR_ENGINE == "faster_whisper" else False),
+            include_in_schema=(True if CONFIG.ASR_ENGINE in ["faster_whisper", "whisperx"] else False),
         ),
     ] = False,
     word_timestamps: bool = Query(
@@ -89,6 +88,11 @@ async def asr(
         description="Max speakers in this file",
         include_in_schema=(True if CONFIG.ASR_ENGINE == "whisperx" else False),
     ),
+    multilingual: bool = Query(
+        default=False,
+        description="Multiple languages in audio file",
+        include_in_schema=(True if CONFIG.ASR_ENGINE in ["faster_whisper", "whisperx"]  else False),
+    ),
     output: Union[str, None] = Query(default="txt", enum=["txt", "vtt", "srt", "tsv", "json"]),
 ):
     if not audio_file.content_type.startswith(("audio/", "video/")):
@@ -101,7 +105,7 @@ async def asr(
         initial_prompt,
         vad_filter,
         word_timestamps,
-        {"diarize": diarize, "min_speakers": min_speakers, "max_speakers": max_speakers},
+        {"diarize": diarize, "min_speakers": min_speakers, "max_speakers": max_speakers, "multilingual": multilingual},
         output,
     )
     return StreamingResponse(

@@ -1,9 +1,12 @@
 import json
 import os
+import io
 from dataclasses import asdict, is_dataclass
 from typing import TextIO, BinaryIO, Union
 
 import ffmpeg
+from pydub import AudioSegment
+
 import numpy as np
 from faster_whisper.utils import format_timestamp
 
@@ -133,7 +136,7 @@ def load_audio(file: BinaryIO, content_type: str, encode=True, sr: int = CONFIG.
     file: BinaryIO
         The audio file like object
     content_type: str
-        The content type of the audio file (e.g., 'audio/wav', 'audio/mpeg', 'audio/ogg').
+        The content type of the audio file (e.g., 'audio/wav', 'audio/mpeg', 'audio/m4a', 'audio/ogg', 'audio/mp4').
     encode: Boolean
         If true, encode audio stream to WAV before sending to whisper
     sr: int
@@ -142,18 +145,69 @@ def load_audio(file: BinaryIO, content_type: str, encode=True, sr: int = CONFIG.
     -------
     A NumPy array containing the audio waveform, in float32 dtype.
     """
+
+    # ffmpeg issue in detecting m4a file
+    input_format = 'aac' if content_type == 'audio/m4a' else None
+
+
+def load_audio(file: BinaryIO, content_type: str, encode=True, sr: int = CONFIG.SAMPLE_RATE, use_ffmpeg: bool = False):
+    """
+    Open an audio file object and read as mono waveform, resampling as necessary.
+    Parameters
+    ----------
+    file: BinaryIO
+        The audio file like object
+    content_type: str
+        The content type of the audio file (e.g., 'audio/wav', 'audio/mpeg', 'audio/m4a', 'audio/ogg', 'audio/mp4').
+    sr: int
+        The sample rate to resample the audio if necessary
+    use_ffmpeg: bool
+        If True, use ffmpeg to load audio. If False, use pydub.
+    Returns
+    -------
+    A NumPy array containing the audio waveform, in float32 dtype.
+    """
     if encode:
-        try:
-            # This launches a subprocess to decode audio while down-mixing and resampling as necessary.
-            # Requires the ffmpeg CLI and `ffmpeg-python` package to be installed.
-            out, _ = (
-                ffmpeg.input("pipe:", threads=0)
-                .output("-", format="s16le", acodec="pcm_s16le", ac=1, ar=sr)
-                .run(cmd="ffmpeg", capture_stdout=True, capture_stderr=True, input=file.read())
-            )
-        except ffmpeg.Error as e:
-            raise RuntimeError(f"Failed to load audio: {e.stderr.decode()}") from e
+        if use_ffmpeg:
+            try:
+                # This launches a subprocess to decode audio while down-mixing and resampling as necessary.
+                # Requires the ffmpeg CLI and `ffmpeg-python` package to be installed.
+                out, _ = (
+                    ffmpeg.input("pipe:", threads=0)
+                    .output("-", format="s16le", acodec="pcm_s16le", ac=1, ar=sr)
+                    .run(cmd="ffmpeg", capture_stdout=True, capture_stderr=True, input=file.read())
+                )
+            except ffmpeg.Error as e:
+                raise RuntimeError(f"Failed to load audio: {e.stderr.decode()}") from e
+            
+            return np.frombuffer(out, np.int16).flatten().astype(np.float32) / 32768.0
+
+        else:
+            try:
+                # Read audio file with pydub
+                audio = AudioSegment.from_file(io.BytesIO(file.read()))
+
+                # Pydub does not support resampling, so we need to convert the frame rate
+                if audio.frame_rate != sr:
+                    audio = audio.set_frame_rate(sr)
+
+                # Convert audio to mono
+                audio = audio.set_channels(1)
+
+                # Convert audio to numpy array
+                samples = np.array(audio.get_array_of_samples())
+
+                # Convert samples to float32
+                samples = samples.astype(np.float32)
+
+                # Normalize the sample values
+                samples = samples / 32768.0
+            except Exception as e:
+                raise RuntimeError(f"Failed to load audio")
+
+            return samples
     else:
         out = file.read()
+        return np.frombuffer(out, np.int16).flatten().astype(np.float32) / 32768.0
 
-    return np.frombuffer(out, np.int16).flatten().astype(np.float32) / 32768.0
+    

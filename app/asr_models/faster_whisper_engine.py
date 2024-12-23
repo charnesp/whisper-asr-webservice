@@ -49,6 +49,8 @@ class FasterWhisperASR(ASRModel):
             options_dict["vad_filter"] = True
         if word_timestamps:
             options_dict["word_timestamps"] = True
+        options_dict["multilingual"] = options.get("multilingual", False)
+
         with self.model_lock:
             segments = []
             text = ""
