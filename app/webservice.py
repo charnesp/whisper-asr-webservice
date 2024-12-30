@@ -1,8 +1,10 @@
 import importlib.metadata
+from io import BytesIO
 import os
 from os import path
 from typing import Annotated, Optional, Union
 from urllib.parse import quote
+import httpx
 
 import click
 import uvicorn
@@ -53,10 +55,10 @@ if path.exists(assets_path + "/swagger-ui.css") and path.exists(assets_path + "/
 async def index():
     return "/docs"
 
-
 @app.post("/asr", tags=["Endpoints"])
 async def asr(
-    audio_file: UploadFile = File(...),  # noqa: B008
+    audio_file: UploadFile = File(None),  # noqa: B008
+    audio_url: str = Query(default=None, description="(optional) URL of the audio file to transcribe"),
     encode: bool = Query(default=True, description="Encode audio first through pydub/ffmpeg"),
     task: Union[str, None] = Query(default="transcribe", enum=["transcribe", "translate"]),
     language: Union[str, None] = Query(default=None, enum=LANGUAGE_CODES),
@@ -90,11 +92,28 @@ async def asr(
     ),
     output: Union[str, None] = Query(default="txt", enum=["txt", "vtt", "srt", "tsv", "json"]),
 ):
+    if audio_file is None and audio_url is None:
+        raise HTTPException(status_code=400, detail="Either audio_file or audio_url must be provided.")
+
+    if audio_url:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(audio_url)
+            audio_content = response.content
+        audio_file = BytesIO(audio_content)
+        audio_file.content_type = response.headers["content-type"]
+        audio_file.seek(0)
+        audio_data = audio_file      
+    else:
+        audio_data = audio_file.file
+
+
+
     if not audio_file.content_type.startswith(("audio/", "video/")):
         raise HTTPException(status_code=400, detail="File must be of audio or video type.")
 
+
     result = asr_model.transcribe(
-        load_audio(audio_file.file, audio_file.content_type, encode),
+        load_audio(audio_data, audio_file.content_type, encode),
         task,
         language,
         initial_prompt,
@@ -108,10 +127,9 @@ async def asr(
         media_type="text/plain",
         headers={
             "Asr-Engine": CONFIG.ASR_ENGINE,
-            "Content-Disposition": f'attachment; filename="{quote(audio_file.filename)}.{output}"',
+            "Content-Disposition": f'attachment; filename="output.{output}"',
         },
     )
-
 
 @app.post("/detect-language", tags=["Endpoints"])
 async def detect_language(
