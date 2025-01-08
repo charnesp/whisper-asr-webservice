@@ -1,5 +1,6 @@
 from typing import BinaryIO, Union
 from io import StringIO
+from threading import Thread
 import whisperx
 import whisper
 from whisperx.utils import SubtitlesWriter, ResultWriter
@@ -16,6 +17,8 @@ class WhisperXASR(ASRModel):
         self.model = whisperx.load_model(
             CONFIG.MODEL_NAME, device=CONFIG.DEVICE, compute_type=CONFIG.MODEL_QUANTIZATION, asr_options=asr_options
         )
+
+        Thread(target=self.monitor_idleness, daemon=True).start()
 
     def load_diarize_model(self):
         if CONFIG.HF_TOKEN != "":
