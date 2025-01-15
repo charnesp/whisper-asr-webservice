@@ -42,10 +42,12 @@ class WhisperXASR(ASRModel):
         options_dict = {"task": task}
         if language:
             options_dict["language"] = language
-        if initial_prompt:
-            options_dict["initial_prompt"] = initial_prompt
-        if word_timestamps:
-            options_dict["word_timestamps"] = word_timestamps
+
+        ### Not handled by whisperx yet   
+        #if initial_prompt:
+        #    options_dict["initial_prompt"] = initial_prompt
+        #if word_timestamps:
+        #    options_dict["word_timestamps"] = word_timestamps
 
         with self.model_lock:
             if self.model is None:

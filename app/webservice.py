@@ -55,6 +55,25 @@ if path.exists(assets_path + "/swagger-ui.css") and path.exists(assets_path + "/
 async def index():
     return "/docs"
 
+@app.post("/audio/transcriptions", tags=["Endpoints"])
+async def transcriptions(
+    file: UploadFile = File(None),  # noqa: B008
+    model: str = Query(default=None, description="Model (not used)")
+):
+    return await asr(
+        audio_file=file,
+        audio_url=None,
+        encode=True,
+        task="transcribe",
+        language=None,
+        initial_prompt=None,
+        vad_filter=True if CONFIG.ASR_ENGINE in ["faster_whisper", "whisperx"] else False,
+        word_timestamps=False,
+        diarize=True,
+        min_speakers=None,
+        max_speakers=None,
+        output="json"
+    )
 @app.post("/asr", tags=["Endpoints"])
 async def asr(
     audio_file: UploadFile = File(None),  # noqa: B008
@@ -95,7 +114,7 @@ async def asr(
     if audio_file is None and audio_url is None:
         raise HTTPException(status_code=400, detail="Either audio_file or audio_url must be provided.")
 
-    if audio_url:
+    if type(audio_url) == str:
         async with httpx.AsyncClient() as client:
             response = await client.get(audio_url)
             audio_content = response.content
@@ -105,7 +124,6 @@ async def asr(
         audio_data = audio_file      
     else:
         audio_data = audio_file.file
-
 
 
     if not audio_file.content_type.startswith(("audio/", "video/")):
