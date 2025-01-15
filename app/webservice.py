@@ -126,8 +126,8 @@ async def asr(
         audio_data = audio_file.file
 
 
-    if not audio_file.content_type.startswith(("audio/", "video/")):
-        raise HTTPException(status_code=400, detail="File must be of audio or video type.")
+    #if not audio_file.content_type.startswith(("audio/", "video/")):
+    #    raise HTTPException(status_code=400, detail="File must be of audio or video type.")
 
 
     result = asr_model.transcribe(
