@@ -28,7 +28,7 @@ class ResultWriter:
 
     def write_result(self, result: dict, file: TextIO, options: Union[dict, None]):
         raise NotImplementedError
-    
+
     def format_segments_in_result(self, result: dict):
         if "segments" in result:
             # Check if result["segments"] is a list
@@ -123,7 +123,7 @@ class WriteJSON(ResultWriter):
     extension: str = "json"
 
     def write_result(self, result: dict, file: TextIO, options: Union[dict, None]):
-        result = self.format_segments_in_result(result) 
+        result = self.format_segments_in_result(result)
         json.dump(result, file)
 
 
@@ -144,6 +144,7 @@ def load_audio(file: BinaryIO, encode=True, sr: int = CONFIG.SAMPLE_RATE, use_ff
     -------
     A NumPy array containing the audio waveform, in float32 dtype.
     """
+
     if encode:
         if use_ffmpeg:
             try:
@@ -156,7 +157,7 @@ def load_audio(file: BinaryIO, encode=True, sr: int = CONFIG.SAMPLE_RATE, use_ff
                 )
             except ffmpeg.Error as e:
                 raise RuntimeError(f"Failed to load audio: {e.stderr.decode()}") from e
-            
+
             return np.frombuffer(out, np.int16).flatten().astype(np.float32) / 32768.0
 
         else:
@@ -186,5 +187,3 @@ def load_audio(file: BinaryIO, encode=True, sr: int = CONFIG.SAMPLE_RATE, use_ff
     else:
         out = file.read()
         return np.frombuffer(out, np.int16).flatten().astype(np.float32) / 32768.0
-
-    

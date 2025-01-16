@@ -55,10 +55,10 @@ if path.exists(assets_path + "/swagger-ui.css") and path.exists(assets_path + "/
 async def index():
     return "/docs"
 
+
 @app.post("/audio/transcriptions", tags=["Endpoints"])
 async def transcriptions(
-    file: UploadFile = File(None),  # noqa: B008
-    model: str = Query(default=None, description="Model (not used)")
+    file: UploadFile = File(None), model: str = Query(default=None, description="Model (not used)")  # noqa: B008
 ):
     return await asr(
         audio_file=file,
@@ -72,8 +72,10 @@ async def transcriptions(
         diarize=True,
         min_speakers=None,
         max_speakers=None,
-        output="json"
+        output="json",
     )
+
+
 @app.post("/asr", tags=["Endpoints"])
 async def asr(
     audio_file: UploadFile = File(None),  # noqa: B008
@@ -121,17 +123,15 @@ async def asr(
         audio_file = BytesIO(audio_content)
         audio_file.content_type = response.headers["content-type"]
         audio_file.seek(0)
-        audio_data = audio_file      
+        audio_data = audio_file
     else:
         audio_data = audio_file.file
 
-
-    #if not audio_file.content_type.startswith(("audio/", "video/")):
+    # if not audio_file.content_type.startswith(("audio/", "video/")):
     #    raise HTTPException(status_code=400, detail="File must be of audio or video type.")
 
-
     result = asr_model.transcribe(
-        load_audio(audio_data, audio_file.content_type, encode),
+        load_audio(audio_data, encode=encode),
         task,
         language,
         initial_prompt,
@@ -148,6 +148,7 @@ async def asr(
             "Content-Disposition": f'attachment; filename="output.{output}"',
         },
     )
+
 
 @app.post("/detect-language", tags=["Endpoints"])
 async def detect_language(
