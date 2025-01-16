@@ -23,6 +23,8 @@ class WhisperXASR(ASRModel):
     def load_diarize_model(self):
         if CONFIG.HF_TOKEN != "":
             self.diarize_model = whisperx.DiarizationPipeline(use_auth_token=CONFIG.HF_TOKEN, device=CONFIG.DEVICE)
+        else:
+            raise Exception("HF_TOKEN is not set. Diarization will not work")
 
     def transcribe(
         self,
