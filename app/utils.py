@@ -130,14 +130,6 @@ class WriteJSON(ResultWriter):
 
     def write_result(self, result: dict, file: TextIO, options: Union[dict, None]):
         result = self.format_segments_in_result(result)
-        if options and "output" in options:
-            output = options["output"]
-            if output == "json_details_in_text":
-                int_result = result.copy()
-                result = {}
-                result["text"] = int_result
-                result["text"].pop("text")
-                result["text"] = str(result["text"])
         json.dump(result, file)
 
 
