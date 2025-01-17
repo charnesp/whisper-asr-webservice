@@ -3,6 +3,7 @@ from io import StringIO
 from threading import Thread
 import whisperx
 import whisper
+import time
 from whisperx.utils import SubtitlesWriter, ResultWriter
 
 from app.asr_models.asr_model import ASRModel
@@ -35,6 +36,8 @@ class WhisperXASR(ASRModel):
         options: Union[dict, None],
         output,
     ):
+        self.last_activity_time = time.time()
+
         with self.model_lock:
             if self.diarize_model is None:
                 self.load_diarize_model()
