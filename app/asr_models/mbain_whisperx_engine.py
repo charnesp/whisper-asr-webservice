@@ -24,6 +24,8 @@ class WhisperXASR(ASRModel):
     def load_diarize_model(self):
         if CONFIG.HF_TOKEN != "":
             self.diarize_model = whisperx.DiarizationPipeline(use_auth_token=CONFIG.HF_TOKEN, device=CONFIG.DEVICE)
+        else:
+            raise Exception("HF_TOKEN is not set. Diarization will not work")
 
     def transcribe(
         self,
@@ -46,10 +48,10 @@ class WhisperXASR(ASRModel):
         if language:
             options_dict["language"] = language
 
-        ### Not handled by whisperx yet   
-        #if initial_prompt:
+        ### Not handled by whisperx yet
+        # if initial_prompt:
         #    options_dict["initial_prompt"] = initial_prompt
-        #if word_timestamps:
+        # if word_timestamps:
         #    options_dict["word_timestamps"] = word_timestamps
 
         with self.model_lock:
@@ -86,11 +88,10 @@ class WhisperXASR(ASRModel):
 
                 embeddings["embeddings"] = embeddings["embeddings"].apply(lambda x: x.tolist())
                 result["embeddings"] = embeddings.to_dict('records')
-                
+
                 result = whisperx.assign_word_speakers(diarize_segments, result)
 
         output_file = StringIO()
-
         # If word_timestamps is 0, then we don't write the timestamps:
         if not options_dict.get("word_timestamps", False):
             for segment in result["segments"]:
@@ -130,8 +131,8 @@ class WhisperXASR(ASRModel):
                 WriteVTT(ResultWriter).write_result(result, file=file, options={})
         elif output == "tsv":
             WriteTSV(ResultWriter).write_result(result, file=file, options={})
-        elif output == "json":
-            WriteJSON(ResultWriter).write_result(result, file=file, options={})
+        elif "json" in str(output):
+            WriteJSON(ResultWriter).write_result(result, file=file, options={"output": output})
         elif output == "txt":
             WriteTXT(ResultWriter).write_result(result, file=file, options={})
         else:

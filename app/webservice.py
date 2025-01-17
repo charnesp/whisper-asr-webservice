@@ -72,7 +72,7 @@ async def transcriptions(
         diarize=True,
         min_speakers=None,
         max_speakers=None,
-        output="json",
+        output="json_details_in_text",
     )
 
 

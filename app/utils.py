@@ -55,6 +55,12 @@ class ResultWriter:
                 # Handle the case where result["segments"] is neither a list nor a dict
                 # You can choose to leave it as is or raise an error
                 pass
+
+            if "text" not in result:
+                text = ""
+                for segment in result["segments"]:
+                    text += segment["text"] + "\n"
+                result["text"] = text.strip()
         return result
 
 
