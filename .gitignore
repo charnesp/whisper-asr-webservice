@@ -43,3 +43,4 @@ poetry/core/*
 
 public
 .devcontainer/.env
+.devcontainer
