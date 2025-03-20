@@ -81,12 +81,17 @@ class WhisperXASR(ASRModel):
             min_speakers = options.get("min_speakers", None)
             max_speakers = options.get("max_speakers", None)
             # add min/max number of speakers if known
-            diarize_segments, embeddings = self.model['diarize_model'](
-                    audio, min_speakers, max_speakers, return_embeddings=True
-                )
-            result = whisperx.assign_word_speakers(diarize_segments, result)
-            embeddings["embeddings"] = embeddings["embeddings"].apply(lambda x: x.tolist())
-            result["embeddings"] = embeddings.to_dict('records')
+            try:
+                diarize_segments, embeddings = self.model['diarize_model'](
+                        audio, min_speakers, max_speakers, return_embeddings=True
+                    )
+                result = whisperx.assign_word_speakers(diarize_segments, result)
+                result["embeddings"] = embeddings.tolist()
+            except ValueError:
+                diarize_segments, embeddings = self.model['diarize_model'](
+                        audio, min_speakers, max_speakers
+                    )
+                result = whisperx.assign_word_speakers(diarize_segments, result)
         result["language"] = language
 
         output_file = StringIO()
